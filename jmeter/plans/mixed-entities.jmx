@@ -103,7 +103,7 @@
       </HeaderManager>
       <hashTree/>
       <BackendListener guiclass="BackendListenerGui" testclass="BackendListener" testname="InfluxDB v2 Backend Listener" enabled="true">
-        <stringProp name="classname">io.github.mderevyankoaqa.influxdb2.visualizer.JMeterInfluxDBBackendListenerClient</stringProp>
+        <stringProp name="classname">io.github.mderevyankoaqa.influxdb2.visualizer.InfluxDatabaseBackendListenerClient</stringProp>
         <elementProp name="arguments" elementType="Arguments">
           <collectionProp name="Arguments.arguments">
             <elementProp name="testName" elementType="Argument">
@@ -425,8 +425,9 @@ vars.put("categoryBody", payload)
         <ModuleController guiclass="ModuleControllerGui" testclass="ModuleController" testname="USE MIXED Samplers" enabled="true">
           <collectionProp name="ModuleController.node_path">
             <stringProp name="0">Test Plan</stringProp>
-            <stringProp name="1">MIXED Samplers</stringProp>
-            <stringProp name="2">Request Mix</stringProp>
+            <stringProp name="1">REST Benchmark - MIXED</stringProp>
+            <stringProp name="2">MIXED Samplers</stringProp>
+            <stringProp name="3">Request Mix</stringProp>
           </collectionProp>
         </ModuleController>
         <hashTree/>
@@ -448,8 +449,9 @@ vars.put("categoryBody", payload)
         <ModuleController guiclass="ModuleControllerGui" testclass="ModuleController" testname="USE MIXED Samplers (Stage 2)" enabled="true">
           <collectionProp name="ModuleController.node_path">
             <stringProp name="0">Test Plan</stringProp>
-            <stringProp name="1">MIXED Samplers</stringProp>
-            <stringProp name="2">Request Mix</stringProp>
+            <stringProp name="1">REST Benchmark - MIXED</stringProp>
+            <stringProp name="2">MIXED Samplers</stringProp>
+            <stringProp name="3">Request Mix</stringProp>
           </collectionProp>
         </ModuleController>
         <hashTree/>

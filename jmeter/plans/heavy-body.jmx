@@ -103,7 +103,7 @@
       </HeaderManager>
       <hashTree/>
       <BackendListener guiclass="BackendListenerGui" testclass="BackendListener" testname="InfluxDB v2 Backend Listener" enabled="true">
-        <stringProp name="classname">io.github.mderevyankoaqa.influxdb2.visualizer.JMeterInfluxDBBackendListenerClient</stringProp>
+        <stringProp name="classname">io.github.mderevyankoaqa.influxdb2.visualizer.InfluxDatabaseBackendListenerClient</stringProp>
         <elementProp name="arguments" elementType="Arguments">
           <collectionProp name="Arguments.arguments">
             <elementProp name="testName" elementType="Argument">
@@ -291,7 +291,12 @@ vars.put("itemBodyLarge", payload)
       </ThreadGroup>
       <hashTree>
         <ModuleController guiclass="ModuleControllerGui" testclass="ModuleController" testname="USE HEAVY Samplers" enabled="true">
-          <stringProp name="ModuleController.node_path">Test Plan/HEAVY Samplers/Request Mix</stringProp>
+          <collectionProp name="ModuleController.node_path">
+            <stringProp name="0">Test Plan</stringProp>
+            <stringProp name="1">REST Benchmark - HEAVY-body</stringProp>
+            <stringProp name="2">HEAVY Samplers</stringProp>
+            <stringProp name="3">Request Mix</stringProp>
+          </collectionProp>
         </ModuleController>
         <hashTree/>
       </hashTree>
@@ -310,7 +315,12 @@ vars.put("itemBodyLarge", payload)
       </ThreadGroup>
       <hashTree>
         <ModuleController guiclass="ModuleControllerGui" testclass="ModuleController" testname="USE HEAVY Samplers (Stage 2)" enabled="true">
-          <stringProp name="ModuleController.node_path">Test Plan/HEAVY Samplers/Request Mix</stringProp>
+          <collectionProp name="ModuleController.node_path">
+            <stringProp name="0">Test Plan</stringProp>
+            <stringProp name="1">REST Benchmark - HEAVY-body</stringProp>
+            <stringProp name="2">HEAVY Samplers</stringProp>
+            <stringProp name="3">Request Mix</stringProp>
+          </collectionProp>
         </ModuleController>
         <hashTree/>
       </hashTree>
