@@ -9,6 +9,7 @@ This project is designed to benchmark different Java backend frameworks for REST
 - `backend/spring-data-rest-app`: Spring Data REST application
 - `frontend`: Next.js frontend application
 - `db`: PostgreSQL database (Dockerized)
+- `jmeter`: scripts, Docker image and data sets to reproduces the load-testing scenarios (InfluxDB v2 backend listener)
 
 ## Prerequisites
 
@@ -20,7 +21,7 @@ This project is designed to benchmark different Java backend frameworks for REST
 To build and run all services (backends, frontend, and database) using Docker Compose, run:
 
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 
 This command will:
@@ -38,7 +39,33 @@ The containers will automatically restart if you restart your Docker service.
 To shut down and remove all containers, networks, and volumes, use:
 
 ```bash
-docker-compose down -v
+docker compose down -v
+
+## Load Testing (JMeter + InfluxDB v2)
+
+1. **Initialisation**
+   ```bash
+   docker compose up -d --build influxdb
+   ```
+   (Les backends + la BDD doivent être démarrés avant de lancer un test.)
+
+2. **Exporter les identifiants** vers `jmeter/data/categories.csv` et `jmeter/data/items.csv` après avoir seedé les 2 000 catégories et 100 000 articles :
+   ```sql
+   \COPY (SELECT id AS categoryId FROM category ORDER BY id) TO 'jmeter/data/categories.csv' WITH (FORMAT csv, HEADER true);
+   \COPY (SELECT id AS itemId FROM item ORDER BY id)       TO 'jmeter/data/items.csv'      WITH (FORMAT csv, HEADER true);
+   ```
+
+3. **Lancer un scénario** :
+   ```bash
+   docker compose run --rm \
+     -e SCENARIO=read-heavy \
+     -e VARIANT=restcontroller \
+     jmeter
+   ```
+   Scénarios disponibles : `read-heavy`, `join-filter`, `mixed`, `heavy-body`.
+
+Les métriques (samples, latences, erreurs, percentiles…) sont envoyées dans InfluxDB (`org=perf`, bucket=`jmeter`, token=`jmeter-dev-token`). Les rapports HTML et fichiers `.jtl` sont stockés dans `jmeter/results/`.
+
 ```
 
 ## Notes

@@ -35,169 +35,225 @@ const attentionPoints = [
 ];
 
 const t0ConfigRows = [
-  { element: "Machine (CPU, coeurs, RAM)", valeur: "—" },
-  { element: "OS / Kernel", valeur: "—" },
-  { element: "Java version", valeur: "—" },
-  { element: "Docker/Compose versions", valeur: "—" },
-  { element: "PostgreSQL version", valeur: "—" },
-  { element: "JMeter version", valeur: "—" },
-  { element: "Prometheus / Grafana / InfluxDB", valeur: "—" },
-  { element: "JVM flags (Xms/Xmx, GC)", valeur: "—" },
-  { element: "HikariCP (min/max/timeout)", valeur: "—" }
+  {
+    element: "Machine (CPU, coeurs, RAM)",
+    valeur: "MacBook Pro – Intel Core i7-7700HQ (4 cœurs / 8 threads), 16 Go RAM"
+  },
+  {
+    element: "OS / Kernel",
+    valeur: "macOS 13.7.2 (22H313) – Darwin 22.6.0"
+  },
+  {
+    element: "Java version",
+    valeur: "Eclipse Temurin 17 (images Docker) · OpenJDK 23.0.1 sur l’hôte"
+  },
+  {
+    element: "Docker/Compose versions",
+    valeur: "Docker 27.5.1 · Docker Compose v2.32.4-desktop.1"
+  },
+  {
+    element: "PostgreSQL version",
+    valeur: "postgres:16-alpine (service `db` docker-compose)"
+  },
+  {
+    element: "JMeter version",
+    valeur: "Apache JMeter 5.6.3 (image custom + plugins jpgc-standard, jpgc-casutg, InfluxDB v2)"
+  },
+  {
+    element: "Prometheus / Grafana / InfluxDB",
+    valeur: "Prometheus 2.52.0 · Grafana 10.4.1 · InfluxDB 2.7"
+  },
+  {
+    element: "JVM flags (Xms/Xmx, GC)",
+    valeur: "JAVA_OPTS vide → G1GC par défaut, heap dynamique (Xms/Xmx auto)"
+  },
+  {
+    element: "HikariCP (min/max/timeout)",
+    valeur: "minimumIdle=10 · maximumPoolSize=20 · connectionTimeout=30 s"
+  }
 ];
 
 const t1ScenarioRows = [
   {
     scenario: "READ-heavy (relation)",
-    mix: "50% GET /items?page=&size=50 ; 20% GET /items?categoryId=&page=&size= ; 20% GET /categories ; 10% GET /categories/{id}/items",
-    threads: "50➜100➜200",
-    rampup: "60 s",
-    duree: "10 min",
-    payload: "—"
+    mix: "50 % GET /api/items?page=0-20&size=50 · 20 % GET /api/items?categoryId=CSV&page=0-10&size=50 · 20 % GET /api/categories/{id}/items?page=0-10&size=50 · 10 % GET /api/categories?page=0-20&size=50",
+    threads: "50 ➜ 100 ➜ 200 utilisateurs",
+    rampup: "Ramp-up 60 s par palier",
+    duree: "Hold 10 min (600 s) par palier",
+    payload: "Lecture JSON (aucun corps)"
   },
   {
     scenario: "JOIN-filter ciblé",
-    mix: "70% GET /items?categoryId=&page=&size= ; 30% GET /items/{id}",
-    threads: "60➜120 (8 min/palier)",
-    rampup: "60 s",
-    duree: "8 min/palier",
-    payload: "—"
+    mix: "70 % GET /api/items?categoryId=CSV&page=0-10&size=50 · 30 % GET /api/items/{id}",
+    threads: "60 ➜ 120 utilisateurs",
+    rampup: "Ramp-up 60 s par palier",
+    duree: "Hold 8 min (480 s) par palier",
+    payload: "Lecture JSON (aucun corps)"
   },
   {
     scenario: "MIXED (2 entités)",
-    mix: "40% GET /items?page=? ; 20% POST /items (JSON 1 KB) ; 10% DELETE /items/{id} ; 10% PUT /items/{id} ; 10% GET /categories ; 10% POST /categories",
-    threads: "50➜100",
-    rampup: "60 s",
-    duree: "10 min/palier",
-    payload: "1 KB"
+    mix: "40 % GET /api/items?page=0-20&size=50 · 20 % POST /api/items (1024 B) · 10 % PUT /api/items/{id} (1024 B) · 10 % DELETE /api/items/{id} · 10 % GET /api/categories?page=0-20&size=50 · 10 % POST /api/categories (512-1024 B)",
+    threads: "50 ➜ 100 utilisateurs",
+    rampup: "Ramp-up 60 s par palier",
+    duree: "Hold 10 min (600 s) par palier",
+    payload: "Items 1 KB · Catégories 0,5-1 KB"
   },
   {
     scenario: "HEAVY-body (payloads 5 KB)",
-    mix: "50% POST /items (5 KB) ; 50% POST /items/{id} (5 KB)",
-    threads: "30➜60",
-    rampup: "60 s",
-    duree: "8 min/palier",
-    payload: "5 KB"
+    mix: "50 % POST /api/items (5 KB) · 50 % PUT /api/items/{id} (5 KB)",
+    threads: "30 ➜ 60 utilisateurs",
+    rampup: "Ramp-up 60 s par palier",
+    duree: "Hold 8 min (480 s) par palier",
+    payload: "JSON 5 KB (champ `details` surdimensionné)"
   }
 ];
 
+const notMeasured = "En attente (import InfluxDB → Grafana panel)";
+
 const t2ResultRows = [
-  { scenario: "READ-heavy", mesure: "RPS", variantA: "—", variantC: "—", variantD: "—" },
-  { scenario: "READ-heavy", mesure: "p50 (ms)", variantA: "—", variantC: "—", variantD: "—" },
-  { scenario: "READ-heavy", mesure: "p95 (ms)", variantA: "—", variantC: "—", variantD: "—" },
-  { scenario: "READ-heavy", mesure: "p99 (ms)", variantA: "—", variantC: "—", variantD: "—" },
-  { scenario: "READ-heavy", mesure: "Err %", variantA: "—", variantC: "—", variantD: "—" },
-  { scenario: "JOIN-filter", mesure: "RPS", variantA: "—", variantC: "—", variantD: "—" },
-  { scenario: "JOIN-filter", mesure: "p50 (ms)", variantA: "—", variantC: "—", variantD: "—" },
-  { scenario: "JOIN-filter", mesure: "p95 (ms)", variantA: "—", variantC: "—", variantD: "—" },
-  { scenario: "JOIN-filter", mesure: "p99 (ms)", variantA: "—", variantC: "—", variantD: "—" },
-  { scenario: "JOIN-filter", mesure: "Err %", variantA: "—", variantC: "—", variantD: "—" },
-  { scenario: "MIXED (2 entités)", mesure: "RPS", variantA: "—", variantC: "—", variantD: "—" },
-  { scenario: "MIXED (2 entités)", mesure: "p50 (ms)", variantA: "—", variantC: "—", variantD: "—" },
-  { scenario: "MIXED (2 entités)", mesure: "p95 (ms)", variantA: "—", variantC: "—", variantD: "—" },
-  { scenario: "MIXED (2 entités)", mesure: "p99 (ms)", variantA: "—", variantC: "—", variantD: "—" },
-  { scenario: "MIXED (2 entités)", mesure: "Err %", variantA: "—", variantC: "—", variantD: "—" },
-  { scenario: "HEAVY-body", mesure: "RPS", variantA: "—", variantC: "—", variantD: "—" },
-  { scenario: "HEAVY-body", mesure: "p50 (ms)", variantA: "—", variantC: "—", variantD: "—" },
-  { scenario: "HEAVY-body", mesure: "p95 (ms)", variantA: "—", variantC: "—", variantD: "—" },
-  { scenario: "HEAVY-body", mesure: "p99 (ms)", variantA: "—", variantC: "—", variantD: "—" },
-  { scenario: "HEAVY-body", mesure: "Err %", variantA: "—", variantC: "—", variantD: "—" }
+  { scenario: "READ-heavy", mesure: "RPS moyen", variantA: notMeasured, variantC: notMeasured, variantD: notMeasured },
+  { scenario: "READ-heavy", mesure: "p50 (ms)", variantA: notMeasured, variantC: notMeasured, variantD: notMeasured },
+  { scenario: "READ-heavy", mesure: "p95 (ms)", variantA: notMeasured, variantC: notMeasured, variantD: notMeasured },
+  { scenario: "READ-heavy", mesure: "p99 (ms)", variantA: notMeasured, variantC: notMeasured, variantD: notMeasured },
+  { scenario: "READ-heavy", mesure: "Err %", variantA: notMeasured, variantC: notMeasured, variantD: notMeasured },
+  { scenario: "JOIN-filter", mesure: "RPS moyen", variantA: notMeasured, variantC: notMeasured, variantD: notMeasured },
+  { scenario: "JOIN-filter", mesure: "p50 (ms)", variantA: notMeasured, variantC: notMeasured, variantD: notMeasured },
+  { scenario: "JOIN-filter", mesure: "p95 (ms)", variantA: notMeasured, variantC: notMeasured, variantD: notMeasured },
+  { scenario: "JOIN-filter", mesure: "p99 (ms)", variantA: notMeasured, variantC: notMeasured, variantD: notMeasured },
+  { scenario: "JOIN-filter", mesure: "Err %", variantA: notMeasured, variantC: notMeasured, variantD: notMeasured },
+  { scenario: "MIXED (2 entités)", mesure: "RPS moyen", variantA: notMeasured, variantC: notMeasured, variantD: notMeasured },
+  { scenario: "MIXED (2 entités)", mesure: "p50 (ms)", variantA: notMeasured, variantC: notMeasured, variantD: notMeasured },
+  { scenario: "MIXED (2 entités)", mesure: "p95 (ms)", variantA: notMeasured, variantC: notMeasured, variantD: notMeasured },
+  { scenario: "MIXED (2 entités)", mesure: "p99 (ms)", variantA: notMeasured, variantC: notMeasured, variantD: notMeasured },
+  { scenario: "MIXED (2 entités)", mesure: "Err %", variantA: notMeasured, variantC: notMeasured, variantD: notMeasured },
+  { scenario: "HEAVY-body", mesure: "RPS moyen", variantA: notMeasured, variantC: notMeasured, variantD: notMeasured },
+  { scenario: "HEAVY-body", mesure: "p50 (ms)", variantA: notMeasured, variantC: notMeasured, variantD: notMeasured },
+  { scenario: "HEAVY-body", mesure: "p95 (ms)", variantA: notMeasured, variantC: notMeasured, variantD: notMeasured },
+  { scenario: "HEAVY-body", mesure: "p99 (ms)", variantA: notMeasured, variantC: notMeasured, variantD: notMeasured },
+  { scenario: "HEAVY-body", mesure: "Err %", variantA: notMeasured, variantC: notMeasured, variantD: notMeasured }
 ];
 
 const t3ResourceRows = [
-  { variant: "A : Jersey", cpu: "—", heap: "—", gc: "—", threads: "—", hikari: "—" },
-  { variant: "C : @RestController", cpu: "—", heap: "—", gc: "—", threads: "—", hikari: "—" },
-  { variant: "D : Spring Data REST", cpu: "—", heap: "—", gc: "—", threads: "—", hikari: "—" }
+  {
+    variant: "A : Jersey",
+    cpu: "Prometheus job backend-jersey-jmx → rate(process_cpu_seconds_total[1m])",
+    heap: "jvm_memory_used_bytes{area=\"heap\", job=\"backend-jersey-jmx\"}",
+    gc: "jvm_gc_pause_seconds_sum/job=\"backend-jersey-jmx\"",
+    threads: "jvm_threads_live_threads (backend-jersey-jmx)",
+    hikari: "hikaricp_active_connections / hikaricp_max_connections"
+  },
+  {
+    variant: "C : @RestController",
+    cpu: "job backend-restcontroller-jmx → rate(process_cpu_seconds_total[1m])",
+    heap: "jvm_memory_used_bytes{area=\"heap\", job=\"backend-restcontroller-jmx\"}",
+    gc: "jvm_gc_pause_seconds_sum/job=\"backend-restcontroller-jmx\"",
+    threads: "jvm_threads_live_threads (backend-restcontroller-jmx)",
+    hikari: "hikaricp_active_connections / hikaricp_max_connections"
+  },
+  {
+    variant: "D : Spring Data REST",
+    cpu: "job backend-spring-data-rest-jmx → rate(process_cpu_seconds_total[1m])",
+    heap: "jvm_memory_used_bytes{area=\"heap\", job=\"backend-spring-data-rest-jmx\"}",
+    gc: "jvm_gc_pause_seconds_sum/job=\"backend-spring-data-rest-jmx\"",
+    threads: "jvm_threads_live_threads (backend-spring-data-rest-jmx)",
+    hikari: "hikaricp_active_connections / hikaricp_max_connections"
+  }
 ];
 
 const t4JoinRows = [
   {
     endpoint: "GET /items?categoryId=",
-    variantA: "—",
-    variantC: "—",
-    variantD: "—",
-    rps: "—",
-    p95: "—",
-    err: "—",
-    observations: ""
+    variantA: "Jersey `ItemResource.list` → `ItemService.list` (ItemRepository#findAllByCategory)",
+    variantC: "@RestController `ItemController.list` → `ItemService.list` (+ DTO mapper)",
+    variantD: "Spring Data REST `/api/items/search/findAllByCategory?category=/{id}`",
+    rps: notMeasured,
+    p95: notMeasured,
+    err: notMeasured,
+    observations: "Comparer la surcharge HAL vs DTO et l’impact JOIN FETCH éventuel."
   },
   {
     endpoint: "GET /categories/{id}/items",
-    variantA: "—",
-    variantC: "—",
-    variantD: "—",
-    rps: "—",
-    p95: "—",
-    err: "—",
-    observations: ""
+    variantA: "Jersey `CategoryResource.listItems` → service + Page<ItemResponse>",
+    variantC: "@RestController `CategoryController.listItems`",
+    variantD: "Spring Data REST association `/api/categories/{id}/items` (collection HAL)",
+    rps: notMeasured,
+    p95: notMeasured,
+    err: notMeasured,
+    observations: "Mesurer la pagination relationnelle et l’impact HAL (links, embedded)."
   }
 ];
 
 const t5MixedRows = [
   {
     endpoint: "GET /items",
-    variantA: "—",
-    variantC: "—",
-    variantD: "—",
-    rps: "—",
-    p95: "—",
-    err: "—",
-    observations: ""
+    variantA: "Jersey `ItemResource.list` (Page<ItemResponse>)",
+    variantC: "@RestController `ItemController.list` (DTO ItemResponse)",
+    variantD: "Spring Data REST `/api/items` (HAL + projections)",
+    rps: notMeasured,
+    p95: notMeasured,
+    err: notMeasured,
+    observations: "Comparer la sérialisation DTO vs HAL et la pagination standard."
   },
   {
     endpoint: "POST /items",
-    variantA: "—",
-    variantC: "—",
-    variantD: "—",
-    rps: "—",
-    p95: "—",
-    err: "—",
-    observations: ""
+    variantA: "Jersey `ItemResource.create` (validation Jakarta + Location header)",
+    variantC: "@RestController `ItemController.create`",
+    variantD: "Spring Data REST POST `/api/items` (évènements SDR)",
+    rps: notMeasured,
+    p95: notMeasured,
+    err: notMeasured,
+    observations: "Payload 1 KB généré (Groovy) → vérifier performances d’écriture."
   },
   {
     endpoint: "PUT /items/{id}",
-    variantA: "—",
-    variantC: "—",
-    variantD: "—",
-    rps: "—",
-    p95: "—",
-    err: "—",
-    observations: ""
+    variantA: "Jersey `ItemResource.update`",
+    variantC: "@RestController `ItemController.update`",
+    variantD: "Spring Data REST PUT `/api/items/{id}`",
+    rps: notMeasured,
+    p95: notMeasured,
+    err: notMeasured,
+    observations: "Mêmes DTO que POST, impact sur versioning / validation."
   },
   {
     endpoint: "DELETE /items/{id}",
-    variantA: "—",
-    variantC: "—",
-    variantD: "—",
-    rps: "—",
-    p95: "—",
-    err: "—",
-    observations: ""
+    variantA: "Jersey `ItemResource.delete` → Response.noContent()",
+    variantC: "@RestController `ItemController.delete` → HTTP 204",
+    variantD: "Spring Data REST DELETE `/api/items/{id}`",
+    rps: notMeasured,
+    p95: notMeasured,
+    err: notMeasured,
+    observations: "Tester verrouillage optimiste / cohérence contraintes FK."
   },
   {
     endpoint: "GET /categories",
-    variantA: "—",
-    variantC: "—",
-    variantD: "—",
-    rps: "—",
-    p95: "—",
-    err: "—",
-    observations: ""
+    variantA: "Jersey `CategoryResource.list`",
+    variantC: "@RestController `CategoryController.list`",
+    variantD: "Spring Data REST `/api/categories` (collection HAL)",
+    rps: notMeasured,
+    p95: notMeasured,
+    err: notMeasured,
+    observations: "Comparer poids HAL vs DTO et temps de sérialisation."
   },
   {
     endpoint: "POST /categories",
-    variantA: "—",
-    variantC: "—",
-    variantD: "—",
-    rps: "—",
-    p95: "—",
-    err: "—",
-    observations: ""
+    variantA: "Jersey `CategoryResource.create`",
+    variantC: "@RestController `CategoryController.create`",
+    variantD: "Spring Data REST POST `/api/categories`",
+    rps: notMeasured,
+    p95: notMeasured,
+    err: notMeasured,
+    observations: "Payload 512-1024 B (description aléatoire)."
   }
 ];
 
 const t6IncidentRows = [
-  { run: "—", variant: "—", type: "—", cause: "", action: "" }
+  {
+    run: "À compléter après campagne",
+    variant: "N/A",
+    type: "Rien à signaler pour l’instant",
+    cause: "Exécuter un scénario JMeter pour remplir ce tableau",
+    action: "Importer les incidents depuis InfluxDB / journaux et documenter ici"
+  }
 ];
 
 const t7SummaryRows = [
